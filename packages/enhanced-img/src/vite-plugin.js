@@ -288,7 +288,7 @@ function get_attr_value(node, attr) {
  *   src: string,
  *   width?: string | number,
  *   height?: string | number
- * }} details
+ * }} details `width` and `height` are numbers, or strings of JS evaluated at runtime
  */
 function serialize_img_attributes(content, attributes, details) {
 	const attribute_strings = attributes.map((attribute) => {
@@ -313,8 +313,8 @@ function serialize_img_attributes(content, attributes, details) {
 	}
 	if (details.width && details.height) {
 		if (!user_width && !user_height) {
-			attribute_strings.push(`width=${details.width}`);
-			attribute_strings.push(`height=${details.height}`);
+			attribute_strings.push(`width=${to_attribute_value(details.width)}`);
+			attribute_strings.push(`height=${to_attribute_value(details.height)}`);
 		} else if (!user_width && user_height) {
 			attribute_strings.push(`width=${scale(details.width, details.height, user_height)}`);
 		} else if (!user_height && user_width) {
@@ -327,38 +327,24 @@ function serialize_img_attributes(content, attributes, details) {
 
 /**
  * Scales an image dimension by the ratio of the size the user set to the matching image size.
- * The image sizes are `{expression}` strings when the image is only known at runtime.
  * @param {string | number} size
  * @param {string | number} matching_size
  * @param {number} user_size
+ * @returns {string | number}
  */
 function scale(size, matching_size, user_size) {
-	if (is_expression(size) || is_expression(matching_size)) {
-		return `{Math.round((${unwrap(size)} * ${user_size}) / ${unwrap(matching_size)})}`;
+	if (typeof size === 'number' && typeof matching_size === 'number') {
+		return Math.round((size * user_size) / matching_size);
 	}
-	return Math.round((stringToNumber(size) * user_size) / stringToNumber(matching_size));
+	return `{Math.round((${size} * ${user_size}) / ${matching_size})}`;
 }
 
 /**
  * @param {string | number} value
- * @returns {value is string}
+ * @returns {string | number}
  */
-function is_expression(value) {
-	return typeof value === 'string' && value.startsWith('{');
-}
-
-/**
- * @param {string | number} value
- */
-function unwrap(value) {
-	return is_expression(value) ? value.slice(1, -1) : value;
-}
-
-/**
- * @param {string|number} param
- */
-function stringToNumber(param) {
-	return typeof param === 'string' ? parseInt(param) : param;
+function to_attribute_value(value) {
+	return typeof value === 'string' ? `{${value}}` : value;
 }
 
 /**
@@ -452,8 +438,8 @@ function dynamic_img_to_picture(content, node, src_expression, src_var_name) {
 		{/each}
 		<img ${serialize_img_attributes(content, attributes, {
 			src: `{${src_var_name}.img.src}`,
-			width: `{${src_var_name}.img.w}`,
-			height: `{${src_var_name}.img.h}`
+			width: `${src_var_name}.img.w`,
+			height: `${src_var_name}.img.h`
 		})} />
 	</picture>
 {/if}`;

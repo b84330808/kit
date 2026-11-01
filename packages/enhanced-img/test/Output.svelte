@@ -180,6 +180,24 @@
 	</picture>
 {/if}
 
+{#if true}{@const __img_4 = get_image(0)}
+{#if typeof __img_4 === 'string'}
+	{#if
+	import.meta.env.DEV && false}
+		{__img_4} was not enhanced. Cannot determine dimensions.
+	{:else}
+		<img src={__img_4} alt="dynamic computed width test" width="280" />
+	{/if}
+{:else}
+	<picture>
+		{#each Object.entries(__img_4.sources) as [format, srcset]}
+			<source {srcset} type={'image/' + format} />
+		{/each}
+		<img src={__img_4.img.src} alt="dynamic computed width test" width="280" height={Math.round((__img_4.img.h * 280) / __img_4.img.w)} />
+	</picture>
+{/if}
+{/if}
+
 <picture>
 	<source src="./dev.avif" />
 	<source srcset="./dev.avif 500v ./bar.avif 100v" />
